@@ -1,51 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import { Play, Pause, RotateCcw, RotateCw, Box } from "lucide-react";
 import type * as THREE from "three";
-import { EXERCISES, JOINT_AMPLITUDE } from "@/lib/exercises";
-import type { ExerciseId, Finger, JointName } from "@/types";
+import handAsset from "@/assets/hand_gesture.glb.asset.json";
+import type { ExerciseId } from "@/types";
 
 type Props = {
-  jointKey: string | null; // e.g. "index_pip"
+  jointKey: string | null;
   exerciseId: ExerciseId | null;
 };
 
-const FINGERS: Finger[] = ["index", "middle", "ring", "little"];
-const JOINTS: JointName[] = ["MCP", "PIP", "DIP"];
-
-const SEG_LEN: Record<string, number> = { mcp: 0.9, pip: 0.65, dip: 0.5 };
-const FINGER_X: Record<Finger, number> = {
-  index: -0.9,
-  middle: -0.3,
-  ring: 0.3,
-  little: 0.9,
-};
-// Slight per-finger length variance.
-const FINGER_SCALE: Record<Finger, number> = {
-  index: 1.0,
-  middle: 1.1,
-  ring: 1.0,
-  little: 0.85,
-};
-
-export function HandViewer({ jointKey, exerciseId }: Props) {
+export function HandViewer({ jointKey: _jointKey, exerciseId: _exerciseId }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<{
     cleanup?: () => void;
-    setHighlight?: (key: string | null) => void;
-    setExercise?: (id: ExerciseId | null) => void;
     setPlaying?: (p: boolean) => void;
     setProgress?: (p: number) => void;
+    setLoopRange?: (start: number, end: number) => void;
   }>({});
-  const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [progressState, setProgressState] = useState(0);
+  const [duration, setDuration] = useState(45);
+  const [fullDuration, setFullDuration] = useState(1.5);
+  const [loopStart, setLoopStart] = useState(0);
+  const [loopEnd, setLoopEnd] = useState(1.5);
 
-  // Build scene once
   useEffect(() => {
     let disposed = false;
     let frameId = 0;
 
     (async () => {
       const THREE = await import("three");
+      const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader.js");
       if (disposed || !containerRef.current) return;
 
       const container = containerRef.current;
@@ -58,16 +43,15 @@ export function HandViewer({ jointKey, exerciseId }: Props) {
         0.1,
         100,
       );
-      camera.position.set(0, 1.5, 7.5);
-      camera.lookAt(0, 1.6, 0);
+      camera.position.set(0, 1.5, 5);
+      camera.lookAt(0, 1, 0);
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(container.clientWidth, container.clientHeight);
       container.appendChild(renderer.domElement);
 
-      // Lighting
-      scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+      scene.add(new THREE.AmbientLight(0xffffff, 0.7));
       const key = new THREE.DirectionalLight(0xffffff, 0.9);
       key.position.set(3, 5, 4);
       scene.add(key);
@@ -75,138 +59,86 @@ export function HandViewer({ jointKey, exerciseId }: Props) {
       rim.position.set(-4, 2, -3);
       scene.add(rim);
 
-      // Materials
-      const boneMat = new THREE.MeshStandardMaterial({
-        color: 0xdbe6f3,
-        roughness: 0.55,
-        metalness: 0.05,
-        emissive: 0x000000,
-      });
-      const palmMat = new THREE.MeshStandardMaterial({
-        color: 0xc7d5e6,
-        roughness: 0.6,
-        metalness: 0.05,
-      });
+      const root = new THREE.Group();
+      scene.add(root);
 
-      const hand = new THREE.Group();
-      scene.add(hand);
-      hand.position.y = 0.4;
-
-      // Palm
-      const palm = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.9, 0.6), palmMat);
-      palm.position.y = 0.45;
-      hand.add(palm);
-
-      // Joints map keyed `{finger}_{joint}`
-      const joints: Record<string, THREE.Object3D> = {};
-      const segments: Record<string, THREE.Mesh> = {};
-
-      for (const finger of FINGERS) {
-        const fScale = FINGER_SCALE[finger];
-        // Base pivot at top of palm
-        const basePivot = new THREE.Group();
-        basePivot.position.set(FINGER_X[finger], 0.9, 0);
-        hand.add(basePivot);
-
-        let parent: THREE.Object3D = basePivot;
-
-        for (const joint of JOINTS) {
-          const jl = joint.toLowerCase();
-          const len = SEG_LEN[jl] * fScale;
-
-          // Pivot at the start of this segment
-          const pivot = new THREE.Group();
-          parent.add(pivot);
-          joints[`${finger}_${jl}`] = pivot;
-
-          // Knuckle sphere
-          const knuckle = new THREE.Mesh(
-            new THREE.SphereGeometry(0.13, 20, 20),
-            boneMat.clone(),
-          );
-          pivot.add(knuckle);
-
-          // Bone cylinder extending +Y from pivot
-          const bone = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.1, 0.085, len, 16),
-            boneMat.clone(),
-          );
-          bone.position.y = len / 2;
-          pivot.add(bone);
-          segments[`${finger}_${jl}`] = bone;
-
-          // Next pivot sits at the tip of this bone
-          const next = new THREE.Group();
-          next.position.y = len;
-          pivot.add(next);
-          parent = next;
-        }
-
-        // Fingertip cap
-        const tip = new THREE.Mesh(
-          new THREE.SphereGeometry(0.09, 16, 16),
-          boneMat.clone(),
-        );
-        parent.add(tip);
-      }
-
-      // Highlight glow sphere
-      const glow = new THREE.Mesh(
-        new THREE.SphereGeometry(0.3, 24, 24),
-        new THREE.MeshBasicMaterial({
-          color: 0xffb547,
-          transparent: true,
-          opacity: 0.32,
-        }),
-      );
-      glow.visible = false;
-      scene.add(glow);
-
-      let highlightKey: string | null = null;
-      let currentExercise: ExerciseId | null = null;
+      let mixer: THREE.AnimationMixer | null = null;
+      let action: THREE.AnimationAction | null = null;
+      let clipDuration = 0;
+      let loopStartT = 0;
+      let loopEndT = 1.5;
       let isPlaying = false;
-      let externalProgress = 0;
-      let internalT = 0;
+      let currentTime = 0;
+      let direction = 1;
 
-      const setHighlight = (key: string | null) => {
-        // reset old segment material
-        Object.entries(segments).forEach(([k, m]) => {
-          const mat = m.material as THREE.MeshStandardMaterial;
-          if (k === key) {
-            mat.color.setHex(0xffd089);
-            mat.emissive.setHex(0xff8a1f);
-            mat.emissiveIntensity = 0.6;
-          } else {
-            mat.color.setHex(0xdbe6f3);
-            mat.emissive.setHex(0x000000);
-            mat.emissiveIntensity = 0;
-          }
-        });
-        highlightKey = key;
-        glow.visible = !!key;
+      const evaluateAt = (time: number, syncUi = true) => {
+        if (!mixer || !action || clipDuration <= 0) return;
+        currentTime = Math.max(0, Math.min(clipDuration, time));
+        action.enabled = true;
+        action.paused = false;
+        action.setEffectiveWeight(1);
+        action.setEffectiveTimeScale(1);
+        mixer.setTime(currentTime);
+        const span = Math.max(loopEndT - loopStartT, 0.0001);
+        if (syncUi) setProgressState(Math.max(0, Math.min(1, (currentTime - loopStartT) / span)));
       };
 
-      const setExercise = (id: ExerciseId | null) => {
-        currentExercise = id;
-        // reset all rotations
-        Object.values(joints).forEach((j) => {
-          j.rotation.x = 0;
-        });
-      };
+      const loader = new GLTFLoader();
+      loader.load(handAsset.url, (gltf) => {
+        if (disposed) return;
+        const model = gltf.scene;
 
-      const setPlayingFn = (p: boolean) => {
-        isPlaying = p;
-      };
-      const setProgressFn = (p: number) => {
-        externalProgress = p;
-        internalT = p;
-      };
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const scale = 2.4 / maxDim;
+        model.scale.setScalar(scale);
+        model.position.sub(center.multiplyScalar(scale));
+        model.position.y += 0.4;
+        root.add(model);
+
+        if (gltf.animations.length > 0) {
+          const clip = pickFullActionClip(gltf.animations);
+          clip.tracks.forEach((t) => t.setInterpolation(THREE.InterpolateLinear));
+          mixer = new THREE.AnimationMixer(model);
+          action = mixer.clipAction(clip);
+          action.enabled = true;
+          action.setEffectiveWeight(1);
+          action.setEffectiveTimeScale(1);
+          action.setLoop(THREE.LoopOnce, 0);
+          action.clampWhenFinished = true;
+          action.reset().play();
+          clipDuration = clip.duration;
+          loopEndT = Math.min(1.26, clipDuration);
+          loopStartT = 0;
+          currentTime = loopStartT;
+          setFullDuration(clipDuration);
+          setLoopStart(loopStartT);
+          setLoopEnd(loopEndT);
+          setDuration(Math.max(1, Math.ceil(clipDuration)));
+          evaluateAt(currentTime, false);
+        }
+      });
 
       stateRef.current = {
-        setHighlight,
-        setExercise,
-        setPlaying: setPlayingFn,
-        setProgress: setProgressFn,
+        setPlaying: (p) => {
+          if (p && clipDuration > 0 && (currentTime >= loopEndT || currentTime < loopStartT)) {
+            evaluateAt(loopStartT);
+          }
+          isPlaying = p;
+        },
+        setProgress: (p) => {
+          const span = Math.max(loopEndT - loopStartT, 0);
+          evaluateAt(loopStartT + Math.max(0, Math.min(1, p)) * span);
+        },
+        setLoopRange: (s, e) => {
+          loopStartT = Math.max(0, Math.min(s, clipDuration));
+          loopEndT = Math.max(loopStartT + 0.01, Math.min(e, clipDuration));
+          if (currentTime < loopStartT || currentTime > loopEndT) {
+            evaluateAt(loopStartT);
+          }
+        },
         cleanup: () => {
           cancelAnimationFrame(frameId);
           renderer.dispose();
@@ -234,90 +166,48 @@ export function HandViewer({ jointKey, exerciseId }: Props) {
       });
       ro.observe(container);
 
-      const tmpVec = new THREE.Vector3();
-
+      let previousTick = 0;
       const tick = (ts: number) => {
         frameId = requestAnimationFrame(tick);
-
-        // Slow ambient rotation
-        hand.rotation.y = Math.sin(ts * 0.0003) * 0.25;
-        hand.rotation.x = -0.15;
-
-        if (isPlaying) {
-          internalT += 1 / 60 / 2.0; // 2s cycle
-          if (internalT > 1) internalT = 0;
-          externalProgress = internalT;
-        }
-
-        const t = isPlaying ? internalT : externalProgress;
-        const ease = (1 - Math.cos(t * Math.PI * 2.2)) / 2;
-
-        if (currentExercise) {
-          const ex = EXERCISES[currentExercise];
-          // reset others
-          Object.entries(joints).forEach(([k, pivot]) => {
-            if (!ex.joints.includes(k)) pivot.rotation.x = 0;
-          });
-          for (const jKey of ex.joints) {
-            const pivot = joints[jKey];
-            if (!pivot) continue;
-            const jl = jKey.split("_")[1];
-            const amp = JOINT_AMPLITUDE[jl] ?? 0.9;
-            pivot.rotation.x = ease * amp;
+        const delta = previousTick ? Math.min((ts - previousTick) / 1000, 0.05) : 0;
+        previousTick = ts;
+        if (mixer && action && clipDuration > 0 && isPlaying) {
+          let nextTime = currentTime + delta * direction;
+          if (nextTime >= loopEndT) {
+            nextTime = loopEndT;
+            direction = -1;
+          } else if (nextTime <= loopStartT) {
+            nextTime = loopStartT;
+            direction = 1;
           }
-        } else {
-          Object.values(joints).forEach((p) => (p.rotation.x = 0));
+          evaluateAt(nextTime);
         }
-
-        if (highlightKey && joints[highlightKey]) {
-          joints[highlightKey].getWorldPosition(tmpVec);
-          glow.position.copy(tmpVec);
-        }
-
         renderer.render(scene, camera);
       };
       frameId = requestAnimationFrame(tick);
-
-      setReady(true);
     })();
 
     return () => {
       disposed = true;
       stateRef.current.cleanup?.();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // React → scene
-  useEffect(() => {
-    stateRef.current.setHighlight?.(jointKey);
-  }, [jointKey, ready]);
-  useEffect(() => {
-    stateRef.current.setExercise?.(exerciseId);
-  }, [exerciseId, ready]);
   useEffect(() => {
     stateRef.current.setPlaying?.(playing);
-  }, [playing, ready]);
+  }, [playing]);
 
-  // External "scrub" only when paused
+  useEffect(() => {
+    stateRef.current.setLoopRange?.(loopStart, loopEnd);
+  }, [loopStart, loopEnd]);
+
   function setProgress(v: number) {
-    if (playing) return; // ignore while playing
     setProgressState(v);
     stateRef.current.setProgress?.(v);
   }
 
-  // local state mirror so the slider follows the animation too
-  const [progressState, setProgressState] = useState(0);
-  useEffect(() => {
-    if (!playing) return;
-    const id = window.setInterval(() => {
-      setProgressState((p) => (p + 1 / 120) % 1);
-    }, 16);
-    return () => window.clearInterval(id);
-  }, [playing]);
-
-  const total = 45;
-  const elapsed = Math.round(progressState * total);
+  const loopSpan = Math.max(loopEnd - loopStart, 0.0001);
+  const elapsedSec = loopStart + progressState * loopSpan;
 
   return (
     <section className="rounded-2xl border border-border bg-surface-muted p-3 shadow-sm overflow-hidden">
@@ -332,7 +222,7 @@ export function HandViewer({ jointKey, exerciseId }: Props) {
       <div className="mt-3 flex items-center gap-3 rounded-xl bg-card border border-border px-4 py-3">
         <button
           className="h-9 w-9 inline-flex items-center justify-center rounded-full hover:bg-accent text-muted-foreground"
-          onClick={() => setProgress(Math.max(0, progressState - 10 / total))}
+          onClick={() => setProgress(Math.max(0, progressState - 10 / duration))}
           aria-label="Back 10s"
         >
           <RotateCcw className="h-4 w-4" />
@@ -341,13 +231,13 @@ export function HandViewer({ jointKey, exerciseId }: Props) {
           className="h-10 w-10 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90"
           onClick={() => setPlaying((p) => !p)}
           aria-label={playing ? "Pause" : "Play"}
-          disabled={!exerciseId}
+          
         >
           {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
         </button>
         <button
           className="h-9 w-9 inline-flex items-center justify-center rounded-full hover:bg-accent text-muted-foreground"
-          onClick={() => setProgress(Math.min(1, progressState + 10 / total))}
+          onClick={() => setProgress(Math.min(1, progressState + 10 / duration))}
           aria-label="Forward 10s"
         >
           <RotateCw className="h-4 w-4" />
@@ -365,11 +255,37 @@ export function HandViewer({ jointKey, exerciseId }: Props) {
           className="flex-1 accent-primary"
         />
         <span className="text-xs tabular-nums text-muted-foreground">
-          {fmt(elapsed)} / {fmt(total)}
+          {elapsedSec.toFixed(2)}s / {loopEnd.toFixed(2)}s
         </span>
       </div>
+
     </section>
   );
+}
+
+function pickFullActionClip(clips: THREE.AnimationClip[]) {
+  const movingClips = clips.filter((clip) => motionScore(clip) > 0.001);
+  const preferred = ["Pose_OKHand", "Pose_PinchOnly"];
+  for (const name of preferred) {
+    const clip = movingClips.find((c) => c.name === name);
+    if (clip) return clip;
+  }
+
+  return (movingClips.length ? movingClips : clips).reduce(
+    (best, clip) => (motionScore(clip) > motionScore(best) ? clip : best),
+    clips[0],
+  );
+}
+
+function motionScore(clip: THREE.AnimationClip) {
+  return clip.tracks.reduce((sum, track) => {
+    const valueSize = track.getValueSize();
+    let delta = 0;
+    for (let i = valueSize; i < track.values.length; i += 1) {
+      delta += Math.abs(track.values[i] - track.values[i % valueSize]);
+    }
+    return sum + delta;
+  }, 0);
 }
 
 function fmt(s: number) {
