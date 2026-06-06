@@ -1,0 +1,141 @@
+@import "tailwindcss" source(none);
+@import "tw-animate-css";
+
+@source "../src";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-display: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+
+  --radius-sm: 0px;
+  --radius-md: 2px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-nhs-blue: #005eb8;
+  --color-nhs-dark-blue: #003d78;
+  --color-nhs-yellow: #ffeb3b;
+  --color-nhs-green: #00703c;
+  --color-nhs-red: #d4351c;
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.25rem;
+
+  /* NHS / GOV.UK Design System palette */
+  --background: #f3f2f1;
+  --foreground: #0b0c0c;
+
+  --surface: #ffffff;
+  --surface-muted: #f3f2f1;
+
+  --card: #ffffff;
+  --card-foreground: #0b0c0c;
+  --popover: #ffffff;
+  --popover-foreground: #0b0c0c;
+
+  /* NHS Blue */
+  --primary: #005eb8;
+  --primary-foreground: #ffffff;
+  --primary-soft: #d8e6f3;
+
+  --secondary: #f3f2f1;
+  --secondary-foreground: #0b0c0c;
+
+  --muted: #f3f2f1;
+  --muted-foreground: #505a5f;
+
+  --accent: #d8e6f3;
+  --accent-foreground: #003d78;
+
+  --destructive: #d4351c;
+  --destructive-foreground: #ffffff;
+
+  --success: #00703c;
+  --success-foreground: #ffffff;
+
+  --warning: #f47738;
+  --warning-foreground: #0b0c0c;
+
+  --border: #b1b4b6;
+  --input: #0b0c0c;
+  --ring: #ffdd00;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0b0c0c;
+  --sidebar-primary: #005eb8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3f2f1;
+  --sidebar-accent-foreground: #005eb8;
+  --sidebar-border: #b1b4b6;
+  --sidebar-ring: #ffdd00;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    color: var(--color-foreground);
+  }
+
+  /* GDS-style focus state — yellow with black underline */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 3px solid #ffdd00;
+    outline-offset: 0;
+    box-shadow: inset 0 -2px 0 #0b0c0c;
+  }
+}
