@@ -99,6 +99,10 @@ function Index() {
           <Sidebar active={tab} onSelect={setTab} />
 
           <main className="flex-1 min-w-0">
+            {tab === "analysis" ? (
+              <ExerciseGame />
+            ) : (
+            <>
             <a
               href="#"
               className="inline-flex items-center gap-1 text-[15px] text-nhs-blue underline underline-offset-2 hover:no-underline"
@@ -170,11 +174,48 @@ function Index() {
             <footer className="mt-10 mb-6 text-xs text-muted-foreground">
               MoveMend · Indicative analysis only · Not a substitute for professional medical advice.
             </footer>
+            </>
+            )}
           </main>
         </div>
       </div>
 
       <Toaster />
+    </div>
+  );
+}
+
+function ExerciseGame() {
+  return (
+    <div>
+      <header className="mt-3 mb-4">
+        <h1 className="text-4xl font-extrabold tracking-tight text-foreground">Guided exercises</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Camera-based thumb rehab with live, gamified form coaching. Allow camera access when prompted.
+        </p>
+      </header>
+      <div
+        className="rounded-2xl overflow-hidden border border-border bg-card"
+        style={{ height: "78vh" }}
+      >
+        <iframe
+          src="/game/index.html"
+          title="Thumb Coach exercises"
+          allow="camera; fullscreen"
+          className="w-full h-full"
+          style={{ border: 0 }}
+        />
+      </div>
+      <p className="mt-3 text-sm">
+        <a
+          href="/game/index.html"
+          target="_blank"
+          rel="noreferrer"
+          className="text-nhs-blue underline underline-offset-2"
+        >
+          Open full screen ↗
+        </a>
+      </p>
     </div>
   );
 }
