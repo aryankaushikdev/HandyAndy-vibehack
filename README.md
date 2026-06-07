@@ -16,7 +16,7 @@ Turning clinician notes into personalised 3D exercise guidance — with live cam
 
 ---
 
-[Live Demo](https://handyandy.vercel.app) · [Gesture Coach](https://gesture-coach.netlify.app) · [Report a Bug](https://github.com/oyagbileoluwaseun/HandyAndy/issues) · [Feedback](https://handyandy.vercel.app/feedback)
+[Live Demo](https://handy-andy.vercel.app/) · [Gesture Coach](https://gesture-coach.netlify.app) · [Report a Bug](https://github.com/oyagbileoluwaseun/HandyAndy/issues) · [Feedback](https://handy-andy.vercel.app/feedback)
 
 ---
 
