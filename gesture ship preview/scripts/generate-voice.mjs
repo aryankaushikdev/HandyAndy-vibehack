@@ -9,13 +9,17 @@
 // Writes MP3s into public/audio/. The app plays them on-device; re-run any time
 // you change the lines below or want a different voice.
 
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, writeFile, access } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const API_KEY = process.env.ELEVENLABS_API_KEY
-const VOICE_ID = process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM' // Rachel
-const MODEL_ID = process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2'
+// Sarah (premade, usable on the free tier — Rachel is now a paid "library" voice).
+const VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL'
+// Flash is ~half the credit cost of multilingual_v2 and plenty good for short cues.
+const MODEL_ID = process.env.ELEVENLABS_MODEL_ID || 'eleven_flash_v2_5'
+// Skip clips that already exist so we never re-bill for them. Set FORCE=1 to redo all.
+const FORCE = process.env.FORCE === '1'
 
 if (!API_KEY) {
   console.error('Set ELEVENLABS_API_KEY first:\n  ELEVENLABS_API_KEY=sk_... node scripts/generate-voice.mjs')
@@ -71,8 +75,16 @@ async function synth(id, text) {
   console.log(`✓ ${id}.mp3  (${(buf.length / 1024).toFixed(0)} KB)  "${text}"`)
 }
 
-console.log(`Generating ${Object.keys(LINES).length} clips → ${outDir}`)
+const exists = async (p) => access(p).then(() => true).catch(() => false)
+
+console.log(`Voice ${VOICE_ID} · model ${MODEL_ID} → ${outDir}`)
+let made = 0, skipped = 0
 for (const [id, text] of Object.entries(LINES)) {
+  if (!FORCE && (await exists(join(outDir, `${id}.mp3`)))) {
+    skipped++
+    continue
+  }
   await synth(id, text) // sequential to stay well under rate limits
+  made++
 }
-console.log('Done. Reload the app — voice is on by default.')
+console.log(`Done. ${made} generated, ${skipped} already present. Reload the app — voice is on by default.`)

@@ -49,16 +49,6 @@ const TEXT: Record<string, string> = {
 
 const PREF_KEY = 'thumb-coach.voice'
 
-// Master switch — voice is OFF for now; on-screen instructions only.
-// Flip to true to bring spoken coaching back (no other changes needed).
-const VOICE_ENABLED = false
-
-// Anti-spam backstop: ignore a repeat of the SAME id (keyed by the full string,
-// incl. any say: text) within this window. The opposition exercise gates its own
-// 2s cadence in the engine, so this is kept below 2s to never block a legit
-// 2s re-prompt; it just kills accidental same-frame double-fires.
-const COOLDOWN_MS = 1500
-
 class Voice {
   private ctx: AudioContext | null = null
   private buffers = new Map<string, AudioBuffer>()
@@ -67,7 +57,11 @@ class Voice {
   private loaded = false
   private loading = false
   private ttsVoice: SpeechSynthesisVoice | null = null
-  private lastPlayed = new Map<string, number>() // id → performance.now() of last play
+  // Single audio channel. The ElevenLabs (Web Audio) clips and the browser
+  // speechSynthesis are independent and were talking over each other. Until a
+  // FULL ElevenLabs set exists, use ONE source — the browser voice — so there's
+  // exactly one voice and never two at once. Flip to true once all clips exist.
+  private useClips = false
   enabled: boolean
 
   constructor() {
@@ -89,7 +83,6 @@ class Voice {
 
   // Must run inside a user gesture (Start / toggle) so audio is allowed to play.
   async unlock() {
-    if (!VOICE_ENABLED) return
     if (!this.ctx) {
       const AC = window.AudioContext || (window as any).webkitAudioContext
       if (AC) this.ctx = new AC()
@@ -103,15 +96,25 @@ class Voice {
       u.volume = 0
       try { window.speechSynthesis.speak(u) } catch { /* ignore */ }
     }
-    this.preload()
+    if (this.useClips) this.preload()
   }
 
   private pickVoice(): SpeechSynthesisVoice | null {
     const vs = window.speechSynthesis.getVoices()
     if (!vs.length) return null
+    // Keep the fallback voice FEMALE so it matches the ElevenLabs (Sarah) clips —
+    // otherwise the system default (often male) and the clips clash as "two voices".
+    const FEMALE =
+      /(female|samantha|serena|kate|stephanie|moira|tessa|fiona|victoria|karen|catherine|allison|ava|susan|zoe|joanna|salli|kimberly|kendra|amy|emma|sonia|libby|aria|jenny|google uk english female|google us english)/i
+    const isFemale = (v: SpeechSynthesisVoice) => FEMALE.test(v.name)
+    const enGB = vs.filter((v) => /en-GB/i.test(v.lang))
+    const en = vs.filter((v) => /^en/i.test(v.lang))
     return (
-      vs.find((v) => /en-GB/i.test(v.lang)) ||
-      vs.find((v) => /^en/i.test(v.lang)) ||
+      enGB.find(isFemale) ||
+      en.find(isFemale) ||
+      vs.find(isFemale) ||
+      enGB[0] ||
+      en[0] ||
       vs[0]
     )
   }
@@ -122,7 +125,9 @@ class Voice {
     await Promise.all(
       CLIP_IDS.map(async (id) => {
         try {
-          const res = await fetch(`/audio/${id}.mp3`)
+          // Use the Vite base (`/coach/` when embedded in HandyAndy) so the
+          // clips resolve correctly no matter where the app is mounted.
+          const res = await fetch(`${import.meta.env.BASE_URL}audio/${id}.mp3`)
           if (!res.ok) return
           this.buffers.set(id, await this.ctx!.decodeAudioData(await res.arrayBuffer()))
         } catch {
@@ -138,23 +143,17 @@ class Voice {
   }
 
   play(id: string) {
-    if (!VOICE_ENABLED || !this.enabled) return
-    // Global anti-spam: drop a repeat of the exact same id within the cooldown
-    // window. Distinct messages (different key) are never blocked.
-    const now = performance.now()
-    const last = this.lastPlayed.get(id)
-    if (last !== undefined && now - last < COOLDOWN_MS) return
-    this.lastPlayed.set(id, now)
+    if (!this.enabled) return
     // Dynamic text (e.g. "say:Rep 3 of 10") is always spoken by the browser —
     // there's no pre-recorded clip for it.
     if (id.startsWith('say:')) { this.speakText(id.slice(4)); return }
-    if (this.ctx && this.buffers.has(id)) {
+    if (this.useClips && this.ctx && this.buffers.has(id)) {
       // Best quality: queued ElevenLabs clip.
       if (this.queue[this.queue.length - 1] === id) return
       this.queue.push(id)
       if (!this.current) this.pump()
     } else {
-      this.speakText(TEXT[id]) // free browser-speech fallback
+      this.speakText(TEXT[id]) // single browser voice (no second channel)
     }
   }
 
@@ -179,17 +178,12 @@ class Voice {
     src.start()
   }
 
-  // Hard stop: cancel in-flight speech, clear the queue, stop any buffer source,
-  // and clear the cooldown map. Call this when the user MANUALLY ends a session.
-  stop() {
+  private stopAll() {
     this.queue = []
     try { this.current?.stop() } catch { /* already stopped */ }
     this.current = null
-    this.lastPlayed.clear()
     if ('speechSynthesis' in window) window.speechSynthesis.cancel()
   }
-
-  private stopAll() { this.stop() }
 }
 
 export const voice = new Voice()

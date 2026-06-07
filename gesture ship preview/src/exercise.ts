@@ -114,18 +114,12 @@ export class OppositionTracker {
   private sounds: string[] = []
   private touchingAnyPrev = false
 
-  // Re-prompt cadence: speak the current target's instruction once, then only
-  // re-speak it after repromptSeconds if the user still hasn't followed it.
-  private repromptTimer = 0          // seconds the user has been WAITING (not following)
-  private lastSpokenCue = ''         // the instruction currently being coached
-  private wrongTimer = 99            // seconds since the last "wrong finger" call (starts armed)
-
   constructor(handedness: string, startedAt: number) {
     this.handedness = handedness
     this.startedAt = startedAt
     this.resetRotation()
-    // First instruction is spoken on the first frame via the re-prompt logic,
-    // so the spoken line always matches the on-screen cue.
+    this.emitSound('start')
+    this.emitSound('next_index')
   }
 
   private emitSound(id: string) { this.sounds.push(id) }
@@ -152,47 +146,12 @@ export class OppositionTracker {
     this.wristMaxDrift = 0
     this.slideReached = false
     this.touchingAnyPrev = false
-    // Re-arm the re-prompt so the first instruction of the new rep is spoken.
-    this.repromptTimer = 0
-    this.lastSpokenCue = ''
-    this.wrongTimer = 99 // armed: a wrong touch is called out immediately
-  }
-
-  // Speak `cue` if it isn't the instruction we're already coaching, or re-speak
-  // it once repromptSeconds have elapsed while the user keeps not following it.
-  // Resets/advances the timer with the per-frame dt. Returns nothing.
-  private coachWaiting(cue: string, dt: number) {
-    if (cue !== this.lastSpokenCue) {
-      // New instruction → speak immediately and start the re-assess timer.
-      this.lastSpokenCue = cue
-      this.repromptTimer = 0
-      this.emitSound('say:' + cue)
-      return
-    }
-    // Same instruction, still waiting → accumulate, re-speak past the interval.
-    this.repromptTimer += dt
-    if (this.repromptTimer >= config.repromptSeconds) {
-      this.repromptTimer = 0
-      this.emitSound('say:' + cue)
-    }
-  }
-
-  // The user is following the current instruction (touching/holding) — don't
-  // re-prompt, and reset the wait timer so a later drop doesn't instantly repeat.
-  private coachFollowing() {
-    this.repromptTimer = 0
   }
 
   get rotationCount() { return this.rotations.length }
 
   update(world: Pt[], image: Pt[], dt: number): LiveView {
     const warnings: string[] = []
-
-    // Session already finished — don't coach a new instruction; let the final
-    // 'complete' line (emitted in completeRotation) be the last thing spoken.
-    if (this.phase === 'done' || this.rotations.length >= config.targetRotations) {
-      return this.view('Session complete — great work', warnings, 0, 0)
-    }
 
     // Track whole-hand drift in frame (forearm-still check) using image coords.
     if (!this.wristStart) this.wristStart = { ...image[LM.WRIST] }
@@ -206,34 +165,20 @@ export class OppositionTracker {
       if (slideD < config.slideDistance) this.slideReached = true
       const cue = this.slideReached
         ? 'Nice — slide complete'
-        : 'Slide your thumb down to the base of your little finger'
-      if (this.slideReached) {
-        // Following the instruction — don't keep nagging the slide cue.
-        this.coachFollowing()
-        this.completeRotation(world)
-      } else {
-        this.coachWaiting(cue, dt)
-      }
+        : 'Slide your thumb tip DOWN the little finger to its base'
+      if (this.slideReached) this.completeRotation(world)
       return this.view(cue, warnings, 0, tipDistance(world, LM.PINKY_TIP))
     }
 
     // ---- TOUCH/HOLD phases ----------------------------------------------
     const target = TARGETS[this.targetIdx]
 
-    // Wrong-finger check: if the thumb lands on a fingertip that isn't the expected
-    // one, call it out — but no more than once every repromptSeconds (so it doesn't
-    // nag if you hover on the wrong finger or the contact flickers).
-    this.wrongTimer += dt
+    // Wrong-finger check, fired once on each new contact: if the thumb lands on a
+    // fingertip that isn't the expected one, call it out by name.
     const closest = this.closestFingertip(world)
     const touchingAnyNow = closest.dist < config.contactDistance
-    if (
-      touchingAnyNow && !this.touchingAnyPrev &&
-      closest.idx !== this.targetIdx &&
-      this.wrongTimer >= config.repromptSeconds
-    ) {
-      // Point them back to the EXPECTED finger, not the wrong one they just hit.
-      this.emitSound('say:Not that finger — touch your ' + target.label + ' finger')
-      this.wrongTimer = 0
+    if (touchingAnyNow && !this.touchingAnyPrev && closest.idx !== this.targetIdx) {
+      this.emitSound('wrong_' + TARGETS[closest.idx].key)
     }
     this.touchingAnyPrev = touchingAnyNow
 
@@ -270,9 +215,6 @@ export class OppositionTracker {
       if (this.holdTimer >= config.minHoldSeconds) res.holdMet = true
       res.holdSeconds = Math.max(res.holdSeconds, this.holdTimer)
 
-      // They're following the instruction — silence the re-prompt timer.
-      this.coachFollowing()
-
       const cue = res.holdMet
         ? `Great — release and move to ${this.nextLabel()}`
         : `Touch ${target.label}: hold ${Math.ceil(config.minHoldSeconds - this.holdTimer)}…`
@@ -281,18 +223,14 @@ export class OppositionTracker {
 
     // Not touching the expected finger.
     if (this.inContact) {
-      // We just released. Advance to the next target, then render THAT target's
-      // cue this same frame so the spoken instruction matches what's shown and
-      // we don't briefly speak the old finger's cue.
+      // We just released. Advance to the next target.
       this.inContact = false
       this.holdTimer = 0
       this.advance(world)
-      return this.update(world, image, dt) // re-render with the new state
+      // fall through to render the new phase's cue next frame
     }
 
-    // Waiting for the expected finger — spoken line matches this on-screen cue.
-    const cue = `Touch your ${target.label} finger`
-    this.coachWaiting(cue, dt)
+    const cue = `Bring your thumb tip to your ${target.label} finger`
     return this.view(cue, warnings, 0, d)
   }
 
@@ -309,19 +247,16 @@ export class OppositionTracker {
     const sc = this.lastMovement ? this.lastMovement.score : 0
     this.emitSound(sc >= 10 ? 'perfect' : sc >= config.streakThreshold ? 'good' : 'hold_longer')
 
-    // The next target's instruction is spoken automatically by coachWaiting()
-    // on the next frame (the cue changes), so no next_* emission here.
     if (this.targetIdx + 1 < PHASE_ORDER.length) {
       this.targetIdx++
       this.phase = PHASE_ORDER[this.targetIdx]
+      this.emitSound('next_' + this.phase) // next_middle / next_ring / next_pinky
     } else if (config.enableSlide) {
       this.phase = 'slide'
+      this.emitSound('next_slide')
     } else {
       this.completeRotation(world)
     }
-    // Re-arm so the new target's instruction is spoken fresh next frame.
-    this.repromptTimer = 0
-    this.lastSpokenCue = ''
   }
 
   // --- Game scoring -------------------------------------------------------
@@ -369,8 +304,7 @@ export class OppositionTracker {
       this.emitSound('rep_done')
       // Count the rep out loud as it ticks up, e.g. "Rep 2 of 10".
       this.emitSound(`say:Rep ${this.rotations.length + 1} of ${config.targetRotations}`)
-      // The first finger's instruction is spoken next frame by coachWaiting()
-      // (resetRotation re-armed lastSpokenCue), so no next_index here.
+      this.emitSound('next_index')
     }
   }
 

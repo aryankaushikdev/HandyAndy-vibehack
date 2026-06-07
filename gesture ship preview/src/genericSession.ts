@@ -12,9 +12,9 @@ import type { Pt } from './landmarks'
 
 // What to say / show for each exercise. `go` is a voice-clip id (see src/audio.ts).
 const PROMPTS: Record<ExerciseId, { action: string; release: string; go: string }> = {
-  thumbIpFlexion: { action: 'Bend just the tip of your thumb', release: 'Now straighten it', go: 'go_ip' },
-  thumbMcpFlexion: { action: 'Bend your thumb in toward your palm', release: 'Now straighten it', go: 'go_mcp' },
-  thumbAbduction: { action: 'Move your thumb out to the side', release: 'and back in', go: 'go_abduction' },
+  thumbIpFlexion: { action: 'Bend your thumb tip', release: 'and straighten', go: 'go_ip' },
+  thumbMcpFlexion: { action: 'Bend your thumb knuckle', release: 'and straighten', go: 'go_mcp' },
+  thumbAbduction: { action: 'Move your thumb out, slowly', release: 'and back', go: 'go_abduction' },
   thumbToPinkyBase: { action: 'Reach your thumb across to your little-finger base', release: 'and hold', go: 'go_pinky' },
   thumbOpposition: { action: 'Touch your thumb to your fingertip', release: 'and release', go: 'go_pinky' },
 }
@@ -40,41 +40,16 @@ export class GenericGameSession {
   private prevPhase = 'relaxed'
   private completeSpoken = false
 
-  // Keep the spoken line in lockstep with the on-screen instruction.
-  private repromptTimer = 0
-  private lastSpokenCue = ''
-
   constructor(id: ExerciseId, relaxed: number, engaged: number, startedAt: number) {
     this.id = id
     this.startedAt = startedAt
     this.tracker = new ExerciseTracker(id)
     this.tracker.setCalibration(relaxed, engaged)
-    // The first instruction is spoken by coach() on the first frame.
+    this.emitSound(PROMPTS[id].go)
     this.emitSound(`say:Rep 1 of ${this.tracker.cfg.repTarget}`)
   }
 
   private emitSound(s: string) { this.sounds.push(s) }
-
-  // Speak the current on-screen instruction; re-speak after repromptSeconds only
-  // while the user is still WAITING to follow it (not while holding/reaching well).
-  private coach(instruction: string, waiting: boolean, dt: number) {
-    if (!instruction) { this.repromptTimer = 0; return }
-    if (instruction !== this.lastSpokenCue) {
-      this.lastSpokenCue = instruction
-      this.repromptTimer = 0
-      this.emitSound('say:' + instruction)
-      return
-    }
-    if (waiting) {
-      this.repromptTimer += dt
-      if (this.repromptTimer >= config.repromptSeconds) {
-        this.repromptTimer = 0
-        this.emitSound('say:' + instruction)
-      }
-    } else {
-      this.repromptTimer = 0
-    }
-  }
 
   private applyMovement(score: number) {
     const perfect = score >= 10
@@ -125,34 +100,17 @@ export class GenericGameSession {
       this.completeSpoken = true
     }
 
-    // --- instruction: keep the spoken line and the on-screen cue in lockstep ---
+    // --- build the live view ---
     const p = PROMPTS[this.id]
     let cue: string
-    let spoken: string
-    let waiting: boolean
-    if (f.setComplete) {
-      cue = 'Session complete — great work'; spoken = ''; waiting = false
-    } else if (isHold && f.phase === 'holding') {
-      cue = `Hold it… ${Math.max(1, Math.ceil((f.holdTargetMs - f.holdMs) / 1000))}`
-      spoken = 'Hold it'; waiting = false
-    } else if (f.phase === 'reached' || f.phase === 'returning') {
-      cue = p.release; spoken = p.release; waiting = false
-    } else {
-      cue = p.action; spoken = p.action; waiting = true
-    }
-    this.coach(spoken, waiting, dtSeconds)
+    if (f.setComplete) cue = 'Session complete — great work'
+    else if (isHold && f.phase === 'holding') cue = `Hold… ${Math.max(1, Math.ceil((f.holdTargetMs - f.holdMs) / 1000))}`
+    else if (f.phase === 'reached' || f.phase === 'returning') cue = p.release
+    else cue = p.action
 
-    // One smooth 0→1 fill per rep so it's clear what to do: for hold exercises the
-    // first half is reaching the target, the second half is holding it for the time;
-    // for bend exercises it's just the bend. Starts empty (you begin at rest).
-    let bar: number
-    if (isHold) {
-      bar = f.phase === 'holding'
-        ? 0.5 + 0.5 * Math.min(1, f.holdMs / f.holdTargetMs)
-        : 0.5 * Math.min(1, f.progress)
-    } else {
-      bar = Math.min(1, f.progress)
-    }
+    const bar = isHold
+      ? (f.phase === 'holding' ? f.holdMs / f.holdTargetMs : Math.min(1, f.progress))
+      : Math.min(1, f.progress)
 
     const sounds = this.sounds
     this.sounds = []
