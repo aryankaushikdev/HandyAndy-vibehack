@@ -1,0 +1,655 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   MoveMend — Global Styles
+   NHS Digital Service Manual + GOV.UK Design System compliant
+   All custom CSS here ONLY covers what Tailwind utilities cannot express.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── BASE RESET & DEFAULTS ─────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Atkinson Hyperlegible Next', 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f9f9ff;
+    color: #191c21;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Enforce consistent heading weights from design tokens */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+  }
+}
+
+/* ── MATERIAL SYMBOLS ──────────────────────────────────────────────────────── */
+/* Cannot be expressed in Tailwind — requires CSS font-variation-settings */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  line-height: 1;
+  user-select: none;
+}
+
+.material-symbols-filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  line-height: 1;
+  user-select: none;
+}
+
+/* ── GDS FOCUS STATE — WCAG AAA REQUIREMENT ────────────────────────────────── */
+/* NHS mandates: 3px yellow outline, no offset, black text on focus            */
+/* Applied to ALL interactive elements via .gds-focus utility class            */
+.gds-focus:focus,
+.gds-focus:focus-visible {
+  outline: 3px solid #FFDD00 !important;
+  outline-offset: 0 !important;
+  background-color: #FFDD00 !important;
+  color: #0B0C0C !important;
+  text-decoration-color: #0B0C0C !important;
+}
+
+/* Focus for elements where background change would break layout */
+.gds-focus-ring:focus,
+.gds-focus-ring:focus-visible {
+  outline: 3px solid #FFDD00;
+  outline-offset: 2px;
+}
+
+/* ── GDS BUTTON — DEPTH SHADOWS ────────────────────────────────────────────── */
+/* GDS buttons use a bottom shadow to simulate a 3D press effect              */
+
+/* Primary: NHS Green */
+.gds-btn-primary {
+  background-color: #00703C;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 28px;
+  padding: 10px 20px;
+  border: none;
+  border-bottom: 4px solid #002d18;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 150ms, transform 100ms, box-shadow 100ms;
+  font-family: inherit;
+  text-decoration: none;
+  border-radius: 0;
+}
+.gds-btn-primary:hover {
+  background-color: #005a30;
+}
+.gds-btn-primary:active {
+  border-bottom-width: 0;
+  transform: translateY(4px);
+}
+.gds-btn-primary:focus {
+  outline: 3px solid #FFDD00;
+  outline-offset: 0;
+  background-color: #FFDD00;
+  color: #0B0C0C;
+  border-bottom-color: #0B0C0C;
+}
+
+/* Secondary: NHS Blue */
+.gds-btn-blue {
+  background-color: #005EB8;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 28px;
+  padding: 10px 20px;
+  border: none;
+  border-bottom: 4px solid #001b3d;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 150ms, transform 100ms;
+  font-family: inherit;
+  text-decoration: none;
+  border-radius: 0;
+}
+.gds-btn-blue:hover {
+  background-color: #004a93;
+}
+.gds-btn-blue:active {
+  border-bottom-width: 0;
+  transform: translateY(4px);
+}
+.gds-btn-blue:focus {
+  outline: 3px solid #FFDD00;
+  outline-offset: 0;
+  background-color: #FFDD00;
+  color: #0B0C0C;
+}
+
+/* Ghost / Secondary: GDS Grey */
+.gds-btn-secondary {
+  background-color: #f3f2f1;
+  color: #0B0C0C;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 24px;
+  padding: 8px 16px;
+  border: 2px solid #0B0C0C;
+  border-bottom: 4px solid #0B0C0C;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 150ms, transform 100ms;
+  font-family: inherit;
+  text-decoration: none;
+  border-radius: 0;
+}
+.gds-btn-secondary:hover {
+  background-color: #dbdad9;
+}
+.gds-btn-secondary:active {
+  border-bottom-width: 2px;
+  transform: translateY(2px);
+}
+.gds-btn-secondary:focus {
+  outline: 3px solid #FFDD00;
+  outline-offset: 0;
+  background-color: #FFDD00;
+  color: #0B0C0C;
+}
+
+/* Warning: NHS Red */
+.gds-btn-warning {
+  background-color: #D4351C;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 24px;
+  padding: 8px 16px;
+  border: none;
+  border-bottom: 4px solid #55140b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 150ms, transform 100ms;
+  font-family: inherit;
+  border-radius: 0;
+}
+.gds-btn-warning:hover {
+  background-color: #aa2a16;
+}
+.gds-btn-warning:active {
+  border-bottom-width: 0;
+  transform: translateY(4px);
+}
+.gds-btn-warning:focus {
+  outline: 3px solid #FFDD00;
+  outline-offset: 0;
+  background-color: #FFDD00;
+  color: #0B0C0C;
+}
+
+/* Live Review — special variant: full-width green with icon */
+.gds-btn-live-review {
+  background-color: #00703C;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 28px;
+  padding: 14px 24px;
+  border: none;
+  border-bottom: 4px solid #002d18;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  transition: background-color 150ms, transform 100ms;
+  font-family: inherit;
+  text-decoration: none;
+  border-radius: 0;
+}
+.gds-btn-live-review:hover {
+  background-color: #005a30;
+}
+.gds-btn-live-review:active {
+  border-bottom-width: 0;
+  transform: translateY(4px);
+}
+.gds-btn-live-review:focus {
+  outline: 3px solid #FFDD00;
+  outline-offset: 0;
+  background-color: #FFDD00;
+  color: #0B0C0C;
+  border-bottom-color: #0B0C0C;
+}
+
+/* ── GDS LINK ───────────────────────────────────────────────────────────────── */
+.gds-link {
+  color: #1d70b8;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.gds-link:hover {
+  color: #003078;
+  text-decoration-thickness: 3px;
+}
+.gds-link:focus {
+  outline: 3px solid #FFDD00;
+  outline-offset: 0;
+  background-color: #FFDD00;
+  color: #0B0C0C;
+  text-decoration-color: #0B0C0C;
+}
+
+/* ── FORM ELEMENTS ──────────────────────────────────────────────────────────── */
+
+/* Textarea — GDS standard */
+.gds-textarea {
+  border: 2px solid #0B0C0C;
+  padding: 10px;
+  width: 100%;
+  font-family: 'Atkinson Hyperlegible Next', sans-serif;
+  font-size: 19px;
+  line-height: 28px;
+  resize: vertical;
+  border-radius: 0;
+  background-color: #ffffff;
+  color: #0B0C0C;
+  display: block;
+}
+.gds-textarea:focus {
+  outline: 3px solid #FFDD00;
+  outline-offset: 0;
+  border-color: #0B0C0C;
+}
+.gds-textarea::placeholder {
+  color: #727783;
+}
+
+/* Text Input — GDS standard */
+.gds-input {
+  border: 2px solid #0B0C0C;
+  padding: 8px 10px;
+  width: 100%;
+  font-family: 'Atkinson Hyperlegible Next', sans-serif;
+  font-size: 19px;
+  line-height: 28px;
+  border-radius: 0;
+  background-color: #ffffff;
+  color: #0B0C0C;
+  display: block;
+}
+.gds-input:focus {
+  outline: 3px solid #FFDD00;
+  outline-offset: 0;
+  border-color: #0B0C0C;
+}
+
+/* ── RANGE / PAIN SLIDER ────────────────────────────────────────────────────── */
+/* Thumb dimensions: 44×44px minimum touch target — NHS accessibility standard */
+.gds-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: #B1B4B6;
+  border: 2px solid #0B0C0C;
+  cursor: pointer;
+  border-radius: 0;
+  outline: none;
+}
+.gds-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 44px;
+  height: 44px;
+  background: #0B0C0C;
+  cursor: pointer;
+  border: 4px solid #FFDD00;
+  border-radius: 0;
+  transition: background-color 150ms;
+}
+.gds-range::-moz-range-thumb {
+  width: 44px;
+  height: 44px;
+  background: #0B0C0C;
+  cursor: pointer;
+  border: 4px solid #FFDD00;
+  border-radius: 0;
+}
+.gds-range:hover::-webkit-slider-thumb {
+  background: #1d70b8;
+}
+.gds-range:focus {
+  outline: 3px solid #FFDD00;
+}
+
+/* ── GDS CHECKBOX — 44×44px touch target ───────────────────────────────────── */
+.gds-checkbox {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border: 3px solid #0B0C0C;
+  cursor: pointer;
+  position: relative;
+  background: white;
+  border-radius: 0;
+  flex-shrink: 0;
+}
+.gds-checkbox:checked {
+  background: #00703C;
+  border-color: #00703C;
+}
+.gds-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 10px;
+  width: 16px;
+  height: 26px;
+  border: 4px solid white;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+.gds-checkbox:focus {
+  outline: 3px solid #FFDD00;
+  outline-offset: 0;
+}
+
+/* Overlay toggle checkbox (viewer settings) */
+.gds-overlay-checkbox:checked + span {
+  font-weight: 700;
+}
+
+/* ── NHS WARNING CALLOUT ────────────────────────────────────────────────────── */
+/* 10px border per NHS Digital component spec */
+.nhs-warning-callout {
+  border: 10px solid #D4351C;
+  padding: 20px;
+  background: #ffffff;
+  margin-bottom: 20px;
+}
+
+/* ── PHASE BANNER ───────────────────────────────────────────────────────────── */
+.gds-phase-banner {
+  background-color: #f3f2f1;
+  border-bottom: 1px solid #B1B4B6;
+  padding: 8px 15px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ── STATUS TAGS ────────────────────────────────────────────────────────────── */
+.status-tag {
+  padding: 2px 8px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  display: inline-block;
+  border-radius: 0;
+}
+.status-tag-completed { background: #00703C; color: #ffffff; }
+.status-tag-progress  { background: #1d70b8; color: #ffffff; }
+.status-tag-warning   { background: #D4351C; color: #ffffff; }
+.status-tag-neutral   { background: #505A5F; color: #ffffff; }
+
+/* Beta tag */
+.beta-tag {
+  background: #005EB8;
+  color: #ffffff;
+  padding: 2px 8px;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 20px;
+  display: inline-block;
+}
+
+/* ── SIDEBAR ────────────────────────────────────────────────────────────────── */
+.sidebar-item {
+  padding: 12px 16px;
+  border-left: 4px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #0B0C0C;
+  font-size: 16px;
+  line-height: 24px;
+  text-decoration: none;
+  transition: background-color 150ms;
+  width: 100%;
+  cursor: pointer;
+  background: none;
+  border-right: none;
+  border-top: none;
+  border-bottom: none;
+  font-family: inherit;
+  font-weight: 400;
+}
+.sidebar-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+.sidebar-item:focus {
+  outline: 3px solid #FFDD00;
+  outline-offset: -3px;
+  background-color: #FFDD00;
+  color: #0B0C0C;
+}
+
+.sidebar-item-active {
+  background-color: #ffffff;
+  border-left: 4px solid #005EB8;
+  color: #005EB8;
+  font-weight: 700;
+}
+.sidebar-item-active:hover {
+  background-color: #f0f4f8;
+}
+
+/* ── 3D VIEWER PLACEHOLDER ──────────────────────────────────────────────────── */
+.viewer-placeholder {
+  background: linear-gradient(135deg, #111827 0%, #1e3a5f 50%, #0a1628 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Anatomical grid overlay for placeholder */
+.viewer-placeholder::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 94, 184, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 94, 184, 0.1) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+.viewer-drop-zone {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  cursor: pointer;
+  transition: background-color 200ms;
+  z-index: 10;
+  border: 3px dashed rgba(255, 255, 255, 0.3);
+}
+.viewer-drop-zone:hover,
+.viewer-drop-zone.drag-active {
+  background: rgba(0, 94, 184, 0.7);
+  border-color: #FFDD00;
+}
+
+/* ── SPARKLINE / SVG CHART ──────────────────────────────────────────────────── */
+.sparkline-dot {
+  transition: r 150ms, fill 150ms;
+  cursor: pointer;
+}
+.sparkline-dot:hover {
+  fill: #FFDD00;
+}
+
+/* ── NOTIFICATION BADGE ─────────────────────────────────────────────────────── */
+.nav-badge {
+  background: #D4351C;
+  color: white;
+  border-radius: 9999px;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Live pulse indicator */
+.live-pulse-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background: #FFDD00;
+  border-radius: 9999px;
+  animation: pulse-live 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* ── AI ANALYSIS PANEL ──────────────────────────────────────────────────────── */
+.ai-result-panel {
+  background: #f2f3fb;
+  border-left: 8px solid #005EB8;
+  padding: 16px;
+  animation: fade-in-up 0.3s ease-out forwards;
+}
+
+.ai-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #c2c6d4;
+  border-top-color: #005EB8;
+  border-radius: 9999px;
+  animation: spin-ring 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ── EXERCISE CHECKLIST ─────────────────────────────────────────────────────── */
+.exercise-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #B1B4B6;
+  transition: background-color 200ms;
+}
+.exercise-item:last-child {
+  border-bottom: none;
+}
+.exercise-item-done {
+  background-color: #f0fff4;
+}
+.exercise-name-done {
+  text-decoration: line-through;
+  color: #727783;
+}
+
+/* ── PROGRESS BAR ───────────────────────────────────────────────────────────── */
+.progress-bar-track {
+  width: 100%;
+  height: 16px;
+  background: #B1B4B6;
+  border: 2px solid #727783;
+  overflow: hidden;
+  border-radius: 0;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: #00703C;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── CLERK AUTH APPEARANCE OVERRIDES ───────────────────────────────────────── */
+/* NHS GDS overrides for Clerk's embedded components */
+/* Applied via the Clerk appearance prop + these utility classes */
+.cl-rootBox { width: 100%; }
+.cl-card {
+  box-shadow: none !important;
+  border: 2px solid #B1B4B6 !important;
+  border-radius: 0 !important;
+}
+.cl-formButtonPrimary {
+  background-color: #00703C !important;
+  border-radius: 0 !important;
+  font-family: 'Atkinson Hyperlegible Next', sans-serif !important;
+  font-size: 19px !important;
+  border-bottom: 4px solid #002d18 !important;
+}
+.cl-formButtonPrimary:hover {
+  background-color: #005a30 !important;
+}
+
+/* ── SCROLLBAR STYLING ──────────────────────────────────────────────────────── */
+/* Chromium only — improves sidebar UX on desktop */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F3F2F1;
+}
+::-webkit-scrollbar-thumb {
+  background: #B1B4B6;
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #727783;
+}
+
+/* ── PRINT STYLES ───────────────────────────────────────────────────────────── */
+/* NHS standard: ensure clinical notes print cleanly */
+@media print {
+  header, aside, .gds-phase-banner, footer { display: none !important; }
+  main { margin: 0 !important; padding: 0 !important; }
+  .nhs-warning-callout { border: 2px solid #D4351C !important; }
+}
+
+/* ── SCAN LINE ANIMATION (3D Viewer placeholder) ──────────────────────────── */
+@keyframes scan-line {
+  0%, 100% { top: 20%; opacity: 0; }
+  10%       { opacity: 1; }
+  45%       { top: 80%; opacity: 0.8; }
+  55%       { top: 80%; opacity: 0.8; }
+  90%       { top: 20%; opacity: 1; }
+  95%       { opacity: 0; }
+}
