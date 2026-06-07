@@ -49,6 +49,16 @@ const TEXT: Record<string, string> = {
 
 const PREF_KEY = 'thumb-coach.voice'
 
+// Master switch — voice is OFF for now; on-screen instructions only.
+// Flip to true to bring spoken coaching back (no other changes needed).
+const VOICE_ENABLED = false
+
+// Anti-spam backstop: ignore a repeat of the SAME id (keyed by the full string,
+// incl. any say: text) within this window. The opposition exercise gates its own
+// 2s cadence in the engine, so this is kept below 2s to never block a legit
+// 2s re-prompt; it just kills accidental same-frame double-fires.
+const COOLDOWN_MS = 1500
+
 class Voice {
   private ctx: AudioContext | null = null
   private buffers = new Map<string, AudioBuffer>()
@@ -57,6 +67,7 @@ class Voice {
   private loaded = false
   private loading = false
   private ttsVoice: SpeechSynthesisVoice | null = null
+  private lastPlayed = new Map<string, number>() // id → performance.now() of last play
   enabled: boolean
 
   constructor() {
@@ -78,6 +89,7 @@ class Voice {
 
   // Must run inside a user gesture (Start / toggle) so audio is allowed to play.
   async unlock() {
+    if (!VOICE_ENABLED) return
     if (!this.ctx) {
       const AC = window.AudioContext || (window as any).webkitAudioContext
       if (AC) this.ctx = new AC()
@@ -126,7 +138,13 @@ class Voice {
   }
 
   play(id: string) {
-    if (!this.enabled) return
+    if (!VOICE_ENABLED || !this.enabled) return
+    // Global anti-spam: drop a repeat of the exact same id within the cooldown
+    // window. Distinct messages (different key) are never blocked.
+    const now = performance.now()
+    const last = this.lastPlayed.get(id)
+    if (last !== undefined && now - last < COOLDOWN_MS) return
+    this.lastPlayed.set(id, now)
     // Dynamic text (e.g. "say:Rep 3 of 10") is always spoken by the browser —
     // there's no pre-recorded clip for it.
     if (id.startsWith('say:')) { this.speakText(id.slice(4)); return }
@@ -161,12 +179,17 @@ class Voice {
     src.start()
   }
 
-  private stopAll() {
+  // Hard stop: cancel in-flight speech, clear the queue, stop any buffer source,
+  // and clear the cooldown map. Call this when the user MANUALLY ends a session.
+  stop() {
     this.queue = []
     try { this.current?.stop() } catch { /* already stopped */ }
     this.current = null
+    this.lastPlayed.clear()
     if ('speechSynthesis' in window) window.speechSynthesis.cancel()
   }
+
+  private stopAll() { this.stop() }
 }
 
 export const voice = new Voice()

@@ -25,12 +25,14 @@ function homeStatsHtml(): string {
   const lvl = levelInfo(allTimeStats().totalPoints)
   const day = dailyStats(config.dailyGoalRotations)
   const goalPct = Math.min(100, Math.round((day.todayRotations / day.goal) * 100))
+  const lvlPct = Math.round(lvl.progress * 100)
   return (
-    `<span class="hs-item"><strong>Level ${lvl.level}</strong>` +
-    `<span class="hs-bar"><span style="width:${Math.round(lvl.progress * 100)}%"></span></span></span>` +
-    `<span class="hs-item">Today ${day.todayRotations}/${day.goal} reps` +
-    `<span class="hs-bar"><span style="width:${goalPct}%"></span></span></span>` +
-    `<span class="hs-item">🗓️ ${day.dayStreak}-day${day.goalMet ? ' ✓' : ''}</span>`
+    `<div class="stat-pill flame"><span class="emoji">🔥</span>` +
+    `<span class="col"><span class="num">${day.dayStreak}</span><span class="lbl">streak</span></span></div>` +
+    `<div class="stat-pill level"><span class="ring" style="--p:${lvlPct}"><span>${lvl.level}</span></span>` +
+    `<span class="col"><span class="num">${allTimeStats().totalPoints}</span><span class="lbl">XP</span></span></div>` +
+    `<div class="stat-pill"><span class="ring" style="--p:${goalPct}"><span>${goalPct}%</span></span>` +
+    `<span class="col"><span class="num">${day.todayRotations}/${day.goal}</span><span class="lbl">today</span></span></div>`
   )
 }
 
@@ -48,16 +50,21 @@ export interface MenuItem { id: string; name: string; level: number; desc: strin
 export function renderMenu(items: MenuItem[], onSelect: (id: string) => void) {
   const list = $('exercise-list')
   list.innerHTML = ''
+  const path = document.createElement('div')
+  path.className = 'path'
   for (const it of items) {
-    const card = document.createElement('button')
-    card.className = 'ex-card'
-    card.innerHTML =
-      `<span class="ex-level">Level ${it.level}</span>` +
-      `<span class="ex-name">${it.name}</span>` +
-      `<span class="ex-desc">${it.desc}</span>`
-    card.addEventListener('click', () => onSelect(it.id))
-    list.appendChild(card)
+    const row = document.createElement('button')
+    row.className = 'node-row'
+    row.innerHTML =
+      `<span class="node">${it.level}</span>` +
+      `<span class="node-info">` +
+      `<span class="node-level">Level ${it.level}</span>` +
+      `<span class="node-title">${it.name}</span>` +
+      `<span class="node-sub">${it.desc}</span></span>`
+    row.addEventListener('click', () => onSelect(it.id))
+    path.appendChild(row)
   }
+  list.appendChild(path)
 }
 
 export function showMenu() {
@@ -74,6 +81,10 @@ export function setCalibrating(on: boolean) {
 export function renderCalibration(cue: string, progress: number) {
   $('cue').textContent = cue
   ;($('hold') as HTMLElement).style.width = `${Math.round(progress * 100)}%`
+}
+export function setCalibBanner(stepLabel: string, hint: string) {
+  $('calib-banner').innerHTML =
+    `<span class="cb-step">${stepLabel}</span>` + (hint ? `<span class="cb-hint">${hint}</span>` : '')
 }
 
 function ratingLabel(score: number): string {
@@ -178,16 +189,24 @@ export function showReport(session: SessionResult, summaryLines: string[]) {
   $('menu').hidden = true
   $('live').hidden = true
   $('report').hidden = false
-  $('report-title').textContent = session.exerciseName ? `${session.exerciseName} — summary` : 'Session summary'
+  $('report-title').hidden = true
 
-  // Game scoreboard at the top of the report.
-  const stats = allTimeStats()
-  const beatBest = (session.bestStreak ?? 0) >= stats.bestStreak && stats.bestStreak > 0
+  // Celebratory header.
+  const prevBest = loadSessions().filter((s) => s.endedAt < session.endedAt).reduce((m, s) => Math.max(m, s.bestStreak ?? 0), 0)
+  const newBest = (session.bestStreak ?? 0) > prevBest && (session.bestStreak ?? 0) > 0
+  const cel = $('celebrate')
+  cel.hidden = false
+  cel.innerHTML =
+    `<div class="big">🎉 ${session.exerciseName || 'Session'} done!</div>` +
+    `<div class="xp">+${session.points ?? 0} XP</div>` +
+    (newBest ? `<div class="badge">🔥 New best streak — ${session.bestStreak} in a row!</div>` : '')
+
+  // Game scoreboard.
   const board = $('scoreboard')
   board.innerHTML =
-    statCard(`${session.points ?? 0}`, 'points') +
-    statCard(`${session.perfectCount ?? 0}`, 'perfect 10s') +
-    statCard(`${session.bestStreak ?? 0}${beatBest ? ' 🏆' : ''}`, 'best streak')
+    statCard(`${session.points ?? 0}`, 'XP earned', '⭐') +
+    statCard(`${session.perfectCount ?? 0}`, 'perfect 10s', '🎯') +
+    statCard(`${session.bestStreak ?? 0}`, 'best streak', '🔥')
 
   renderLevelBar()
 
@@ -203,8 +222,8 @@ export function showReport(session: SessionResult, summaryLines: string[]) {
   renderHistory()
 }
 
-function statCard(value: string, label: string): string {
-  return `<div class="stat"><div class="stat-val">${value}</div><div class="stat-label">${label}</div></div>`
+function statCard(value: string, label: string, ico = ''): string {
+  return `<div class="stat"><div class="stat-ico">${ico}</div><div class="stat-val">${value}</div><div class="stat-label">${label}</div></div>`
 }
 
 // Level progress + daily goal block, shown on both report views.
@@ -225,14 +244,16 @@ export function showHistoryOnly() {
   $('menu').hidden = true
   $('live').hidden = true
   $('report').hidden = false
-  $('report-title').textContent = 'Progress'
+  $('report-title').hidden = false
+  $('report-title').textContent = 'Your progress'
+  $('celebrate').hidden = true
   $('coaching-heading').hidden = true
   $('summary').innerHTML = ''
   const stats = allTimeStats()
   $('scoreboard').innerHTML =
-    statCard(`${stats.totalPoints}`, 'total points') +
-    statCard(`${stats.totalPerfect}`, 'perfect 10s') +
-    statCard(`${stats.bestStreak}`, 'best streak ever')
+    statCard(`${stats.totalPoints}`, 'total XP', '⭐') +
+    statCard(`${stats.totalPerfect}`, 'perfect 10s', '🎯') +
+    statCard(`${stats.bestStreak}`, 'best streak', '🔥')
   renderLevelBar()
   renderHistory()
 }

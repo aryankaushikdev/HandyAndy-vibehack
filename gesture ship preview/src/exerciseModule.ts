@@ -92,15 +92,6 @@ function normDist(lm: Landmarks, i: number, j: number): number {
   return dist(lm[i], lm[j]) / handSize(lm);
 }
 
-/** Angle (degrees) at joint B formed by points A-B-C. Scale-invariant. */
-function jointAngle(A: Landmark, B: Landmark, C: Landmark): number {
-  const BA = { x: A.x - B.x, y: A.y - B.y, z: (A.z ?? 0) - (B.z ?? 0) };
-  const BC = { x: C.x - B.x, y: C.y - B.y, z: (C.z ?? 0) - (B.z ?? 0) };
-  const dot = BA.x * BC.x + BA.y * BC.y + BA.z * BC.z;
-  const mag = Math.hypot(BA.x, BA.y, BA.z) * Math.hypot(BC.x, BC.y, BC.z) || 1e-6;
-  const cos = Math.min(1, Math.max(-1, dot / mag));
-  return (Math.acos(cos) * 180) / Math.PI;
-}
 
 function clamp(v: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, v));
@@ -149,27 +140,33 @@ interface ExerciseDef {
   defaults: ExerciseConfig;
 }
 
+// More smoothing (lower emaAlpha) + more sustained frames at the target, so a
+// noisy signal or a random wiggle can't trip a rep — you must actually hold the
+// bend briefly for it to count.
 const DEFAULTS_FLEX: ExerciseConfig = {
   repTarget: 10, targetFrac: 0.8, returnFrac: 0.2,
-  holdTargetMs: 0, safetyCapFrac: 99, emaAlpha: 0.4, stableFrames: 3,
+  holdTargetMs: 0, safetyCapFrac: 99, emaAlpha: 0.25, stableFrames: 8,
 };
 const DEFAULTS_HOLD: ExerciseConfig = {
   repTarget: 10, targetFrac: 0.85, returnFrac: 0.5,
-  holdTargetMs: 3000, safetyCapFrac: 99, emaAlpha: 0.4, stableFrames: 3,
+  holdTargetMs: 3000, safetyCapFrac: 99, emaAlpha: 0.3, stableFrames: 3,
 };
 
 export const EXERCISES: Record<ExerciseId, ExerciseDef> = {
-  // Level 1 — bend just the tip joint. Angle at the IP joint (landmark 3).
+  // Level 1 — bend the thumb tip. DISTANCE thumb tip → base knuckle: shrinks as the
+  // tip curls in. Distance is far less noisy than the raw IP joint angle.
   thumbIpFlexion: {
     id: "thumbIpFlexion", name: "Thumb tip bend", level: 1, detector: "flexExtend",
-    metric: (lm) => jointAngle(lm[LM.THUMB_MCP], lm[LM.THUMB_IP], lm[LM.THUMB_TIP]),
+    metric: (lm) => normDist(lm, LM.THUMB_TIP, LM.THUMB_MCP),
     defaults: { ...DEFAULTS_FLEX },
   },
 
-  // Level 2 — bend the knuckle (the injured MCP joint). Angle at landmark 2.
+  // Level 2 — bend the thumb in toward the palm. DISTANCE thumb tip → middle-finger
+  // knuckle (palm centre): shrinks as the thumb folds across. Robust vs the noisy
+  // MCP joint angle that used to false-trigger on random motion.
   thumbMcpFlexion: {
     id: "thumbMcpFlexion", name: "Thumb knuckle bend", level: 2, detector: "flexExtend",
-    metric: (lm) => jointAngle(lm[LM.THUMB_CMC], lm[LM.THUMB_MCP], lm[LM.THUMB_IP]),
+    metric: (lm) => normDist(lm, LM.THUMB_TIP, LM.MIDDLE_MCP),
     defaults: { ...DEFAULTS_FLEX },
   },
 
@@ -187,7 +184,7 @@ export const EXERCISES: Record<ExerciseId, ExerciseDef> = {
   thumbToPinkyBase: {
     id: "thumbToPinkyBase", name: "Thumb to pinky base", level: 4, detector: "reachHold",
     metric: (lm) => normDist(lm, LM.THUMB_TIP, LM.PINKY_MCP),
-    defaults: { ...DEFAULTS_HOLD, holdTargetMs: 6000, targetFrac: 0.85 },
+    defaults: { ...DEFAULTS_HOLD, holdTargetMs: 3000, targetFrac: 0.6, returnFrac: 0.35 },
   },
 
   // (Optional) opposition — what your existing game already does. Included so the
@@ -261,12 +258,15 @@ export class ExerciseTracker {
     let justCompleted = false;
 
     if (this.def.detector === "flexExtend") {
-      // Reach target (progress >= 1) then return (progress <= returnFrac) = 1 rep.
+      // Count the rep on the BEND (reaching the target). The return (straighten)
+      // just re-arms for the next rep — so feedback fires when you bend, not relax.
       if (this.armed && progress >= 1) {
         this.stableCount++;
-        if (this.stableCount >= this.cfg.stableFrames) { this.state = "reached"; this.armed = false; this.stableCount = 0; }
+        if (this.stableCount >= this.cfg.stableFrames) {
+          this.reps++; justCompleted = true; this.state = "reached"; this.armed = false; this.stableCount = 0;
+        }
       } else if (!this.armed && progress <= this.cfg.returnFrac) {
-        this.reps++; justCompleted = true; this.armed = true; this.state = "relaxed";
+        this.armed = true; this.state = "relaxed"; // returned to start → ready for the next bend
       } else {
         this.stableCount = 0;
         if (this.armed) this.state = progress > 0.2 ? "engaging" : "relaxed";

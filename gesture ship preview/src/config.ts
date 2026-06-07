@@ -13,13 +13,18 @@ export const config = {
   // Normalised distance (thumb tip → finger tip, divided by your hand length)
   // below which we count the tips as "touching". Watch the calibration number
   // on screen while you pinch and set this just above your touching value.
-  contactDistance: 0.30,
+  contactDistance: 0.38, // a touch counts a bit more readily (esp. middle finger)
   // Hysteresis so a contact doesn't flicker on/off right at the threshold.
-  releaseExtra: 0.08,
+  releaseExtra: 0.10,
 
   // --- Hold timing -------------------------------------------------------
-  minHoldSeconds: 5, // handout: hold 3–5s
-  goodHoldSeconds: 5,
+  minHoldSeconds: 3, // hold each position for 3 seconds
+  goodHoldSeconds: 3,
+
+  // --- Voice re-prompt cadence -------------------------------------------
+  // While the user hasn't yet followed the current spoken instruction, wait
+  // this many seconds before re-speaking it (re-assess, then repeat).
+  repromptSeconds: 2,
 
   // --- "Slightly rounded" joints ----------------------------------------
   // Joint angle in degrees. ~180 = dead straight, smaller = more bent.
