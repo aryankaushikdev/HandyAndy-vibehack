@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- No maximum-scale / user-scalable: WCAG + GDS require pinch-zoom. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0c0c" />
+    <link rel="manifest" href="/coach/manifest.webmanifest" />
+    <title>Thumb Coach</title>
+    <script type="module" crossorigin src="/coach/assets/index-BPAV0yDp.js"></script>
+    <link rel="stylesheet" crossorigin href="/coach/assets/index-D6B2573q.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="app-header" role="banner">
+      <div class="app-width">
+        <span class="app-header__name">Thumb Coach</span>
+      </div>
+    </header>
+
+    <div class="app-width">
+      <div class="phase-banner">
+        <strong class="govuk-tag">Alpha</strong>
+        <span class="phase-banner__text">A personal rehab tool — not a government service.</span>
+      </div>
+    </div>
+
+    <main class="app-width" id="main-content" role="main">
+      <!-- Menu / exercise picker -->
+      <section id="menu" class="screen">
+        <h1 class="govuk-heading-l">Choose an exercise</h1>
+        <div id="menu-stats" class="homestats"></div>
+        <div id="exercise-list" class="ex-list"></div>
+        <div class="controls">
+          <button id="menu-progress" class="govuk-button govuk-button--secondary">View progress</button>
+          <button id="menu-voice" class="govuk-button govuk-button--secondary">🔊 Voice: on</button>
+        </div>
+      </section>
+
+      <!-- Live camera screen -->
+      <section id="live" class="screen" hidden>
+        <div class="topbar">
+          <p id="cue" class="instruction">Press Start, then face your open palm to the camera so it can see all your fingers.</p>
+          <div class="hold-track"><div id="hold" class="hold-fill"></div></div>
+
+          <div class="livestats">
+            <span id="points" class="livestat">0 points</span>
+            <span id="streak" class="livestat">🔥 0 · best 0</span>
+          </div>
+
+          <div class="reps">
+            <div class="reps-head">
+              <span id="reps-text" class="reps-text">Rep 1 of 10</span>
+              <span id="reps-steps" class="reps-steps"></span>
+            </div>
+            <div class="reps-track"><div id="reps-fill" class="reps-fill"></div></div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <video id="cam" playsinline autoplay muted></video>
+          <canvas id="overlay"></canvas>
+
+          <div class="hud">
+            <div id="combo" class="combo-badge" hidden></div>
+            <div id="rating-flash" class="rating-flash"></div>
+            <div id="warnings" class="warnings"></div>
+          </div>
+        </div>
+
+        <div id="homestats" class="homestats"></div>
+
+        <div class="controls">
+          <button id="stop" class="govuk-button">Finish</button>
+          <button id="live-menu" class="govuk-button govuk-button--secondary">Back to menu</button>
+        </div>
+        <p id="status" class="status">Loading hand tracker…</p>
+      </section>
+
+      <!-- Summary / progress screen -->
+      <section id="report" class="screen" hidden>
+        <h1 id="report-title" class="govuk-heading-l">Session summary</h1>
+        <div id="scoreboard" class="scoreboard"></div>
+        <div id="levelbar" class="levelbar"></div>
+
+        <h2 id="coaching-heading" class="govuk-heading-m">Coaching</h2>
+        <div id="summary" class="summary"></div>
+
+        <h2 class="govuk-heading-m">Progress</h2>
+        <div id="history" class="history"></div>
+
+        <div class="controls">
+          <button id="back" class="govuk-button">Back to menu</button>
+          <button id="export" class="govuk-button govuk-button--secondary">Export data</button>
+          <button id="clear" class="govuk-button govuk-button--warning">Clear history</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer" role="contentinfo">
+      <div class="app-width">
+        <p class="disclaimer">
+          Not a medical device. This tool gives form cues and tracks your own trends —
+          it does not replace your therapist's guidance. Follow your prescribed routine.
+        </p>
+      </div>
+    </footer>
+
+  </body>
+</html>

@@ -57,6 +57,11 @@ class Voice {
   private loaded = false
   private loading = false
   private ttsVoice: SpeechSynthesisVoice | null = null
+  // Single audio channel. The ElevenLabs (Web Audio) clips and the browser
+  // speechSynthesis are independent and were talking over each other. Until a
+  // FULL ElevenLabs set exists, use ONE source — the browser voice — so there's
+  // exactly one voice and never two at once. Flip to true once all clips exist.
+  private useClips = false
   enabled: boolean
 
   constructor() {
@@ -91,15 +96,25 @@ class Voice {
       u.volume = 0
       try { window.speechSynthesis.speak(u) } catch { /* ignore */ }
     }
-    this.preload()
+    if (this.useClips) this.preload()
   }
 
   private pickVoice(): SpeechSynthesisVoice | null {
     const vs = window.speechSynthesis.getVoices()
     if (!vs.length) return null
+    // Keep the fallback voice FEMALE so it matches the ElevenLabs (Sarah) clips —
+    // otherwise the system default (often male) and the clips clash as "two voices".
+    const FEMALE =
+      /(female|samantha|serena|kate|stephanie|moira|tessa|fiona|victoria|karen|catherine|allison|ava|susan|zoe|joanna|salli|kimberly|kendra|amy|emma|sonia|libby|aria|jenny|google uk english female|google us english)/i
+    const isFemale = (v: SpeechSynthesisVoice) => FEMALE.test(v.name)
+    const enGB = vs.filter((v) => /en-GB/i.test(v.lang))
+    const en = vs.filter((v) => /^en/i.test(v.lang))
     return (
-      vs.find((v) => /en-GB/i.test(v.lang)) ||
-      vs.find((v) => /^en/i.test(v.lang)) ||
+      enGB.find(isFemale) ||
+      en.find(isFemale) ||
+      vs.find(isFemale) ||
+      enGB[0] ||
+      en[0] ||
       vs[0]
     )
   }
@@ -110,7 +125,9 @@ class Voice {
     await Promise.all(
       CLIP_IDS.map(async (id) => {
         try {
-          const res = await fetch(`/audio/${id}.mp3`)
+          // Use the Vite base (`/coach/` when embedded in HandyAndy) so the
+          // clips resolve correctly no matter where the app is mounted.
+          const res = await fetch(`${import.meta.env.BASE_URL}audio/${id}.mp3`)
           if (!res.ok) return
           this.buffers.set(id, await this.ctx!.decodeAudioData(await res.arrayBuffer()))
         } catch {
@@ -130,13 +147,13 @@ class Voice {
     // Dynamic text (e.g. "say:Rep 3 of 10") is always spoken by the browser —
     // there's no pre-recorded clip for it.
     if (id.startsWith('say:')) { this.speakText(id.slice(4)); return }
-    if (this.ctx && this.buffers.has(id)) {
+    if (this.useClips && this.ctx && this.buffers.has(id)) {
       // Best quality: queued ElevenLabs clip.
       if (this.queue[this.queue.length - 1] === id) return
       this.queue.push(id)
       if (!this.current) this.pump()
     } else {
-      this.speakText(TEXT[id]) // free browser-speech fallback
+      this.speakText(TEXT[id]) // single browser voice (no second channel)
     }
   }
 

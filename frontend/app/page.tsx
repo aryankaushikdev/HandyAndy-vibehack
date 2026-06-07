@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { Icon } from "@/components/Icons";
 import { PhaseBanner } from "@/components/PhaseBanner";
+import { HeroScene } from "@/components/HeroScene";
 
 const benefits = [
   {
@@ -30,7 +30,7 @@ const steps = [
   },
   {
     title: "Access your 3D recovery guide",
-    text: "Open MoveMend on any device to see your daily exercise schedule. Follow detailed 3D models that guide you through every movement."
+    text: "Open HandyAndy on any device to see your daily exercise schedule. Follow detailed 3D models that guide you through every movement."
   },
   {
     title: "Log your pain and progress daily",
@@ -49,15 +49,15 @@ export default function PatientLandingPage() {
           <div>
             <h1 id="hero-title">Your recovery, in your hands.</h1>
             <p>
-              Personalised physical rehabilitation guided by clinical expertise. MoveMend connects you with your clinician to ensure every step of your journey is safe and effective.
+              Personalised physical rehabilitation guided by clinical expertise. HandyAndy connects you with your clinician to ensure every step of your journey is safe and effective.
             </p>
             <Link className="btn btn--green" href="/dashboard">
               Start your recovery
             </Link>
           </div>
-          <div className="hero__media" aria-hidden="true">
+          <div className="hero__media">
             <div className="hero__media-inner">
-              <Image className="hero__phone" src="/images/phone-recovery-app.png" alt="" width={225} height={229} priority />
+              <HeroScene />
             </div>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function PatientLandingPage() {
 
         <section id="safety" className="disclaimer" aria-labelledby="safety-title">
           <h2 id="safety-title"><Icon name="warning" /> Medical Disclaimer</h2>
-          <p><strong>MoveMend is a clinician-led rehabilitation tool.</strong></p>
+          <p><strong>HandyAndy is a clinician-led rehabilitation tool.</strong></p>
           <p>
             Do not attempt any exercises without a formal recommendation from your healthcare provider. If you experience sharp pain, dizziness, or shortness of breath while exercising, stop immediately and contact your clinician or call 111.
           </p>
@@ -101,7 +101,7 @@ export default function PatientLandingPage() {
 
         <section id="support" className="final-cta" aria-labelledby="cta-title">
           <h2 id="cta-title">Ready to start your journey?</h2>
-          <p>Speak with your NHS clinician about using MoveMend for your recovery plan today.</p>
+          <p>Speak with your NHS clinician about using HandyAndy for your recovery plan today.</p>
           <div className="cta-row">
             <Link className="btn btn--blue" href="/dashboard">Start your recovery</Link>
             <a className="btn btn--secondary" href="#provider">Find a provider</a>

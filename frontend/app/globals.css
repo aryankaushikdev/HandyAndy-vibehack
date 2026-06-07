@@ -167,3 +167,97 @@ h3 { font-size: 22px; line-height: 1.3; margin: 0 0 10px; }
   .step-card { grid-template-columns: 46px 1fr; }
   .warning-callout { border-width: 6px; }
 }
+
+/* --- HandyAndy: 3D viewer + integration controls --------------------------- */
+.hand3d { display: flex; flex-direction: column; gap: 10px; }
+.hand3d__canvas {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: radial-gradient(circle at 50% 35%, #eef3fb 0%, #dbe4f2 70%, #cdd8ea 100%);
+  border: 1px solid var(--gds-grey);
+  overflow: hidden;
+}
+.hand3d__canvas canvas { display: block; width: 100% !important; height: 100% !important; }
+.hand3d__overlay {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  color: var(--text-muted); font-size: 16px; text-align: center; padding: 20px;
+}
+.hand3d__bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.hand3d__tag { background: #fff; border: 2px solid var(--gds-black); padding: 4px 10px; font-size: 15px; font-weight: 700; }
+.hand3d__bar .icon-button { width: auto; padding: 0 12px; height: 34px; font-size: 14px; font-weight: 700; }
+
+.viewer__placeholder {
+  aspect-ratio: 1 / 1; border: 1px dashed var(--gds-grey); background: #f8f8f8;
+  display: grid; place-content: center; gap: 12px; text-align: center; padding: 24px; color: var(--text-muted);
+}
+.viewer__placeholder-icon { font-size: 56px; }
+.viewer__placeholder p { margin: 0; max-width: 280px; }
+
+.viewer__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.viewer__actions .btn { flex: 1 1 auto; text-align: center; }
+
+.hint { color: var(--text-muted); font-size: 15px; margin: 10px 0 0; }
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.safety-card { background: #fdf2f2; border-left: 8px solid var(--nhs-red); padding: 24px; margin-bottom: 36px; }
+.safety-card h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: 22px; color: #942514; }
+.safety-card p { margin: 0; }
+
+/* Hero/decorative variant of the 3D hand (landing page) */
+.hand3d--bare .hand3d__canvas { background: transparent; border: 0; width: 100%; min-height: 240px; }
+.hand3d--bare .hand3d__overlay { color: rgba(255,255,255,.7); }
+
+/* --- Landing hero: patient-with-cast using the HandyAndy app ------------- */
+.hero-scene { position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 0; min-height: 320px; width: 100%; }
+.hero-scene__person { width: 46%; max-width: 230px; height: auto; align-self: flex-end; }
+.hero-phone {
+  position: relative; width: 44%; max-width: 188px; align-self: center;
+  margin-left: -18px; margin-bottom: 8px;
+  background: #0b0c0c; border-radius: 26px; padding: 9px;
+  box-shadow: 0 24px 40px rgba(0,0,0,0.5); border: 1px solid #2a2f33;
+  transform: rotate(-4deg);
+}
+.hero-phone__notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 46px; height: 7px; background: #0b0c0c; border-radius: 6px; z-index: 2; }
+.hero-phone__screen { background: #ffffff; border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; height: 300px; }
+.hero-phone__appbar { background: var(--nhs-blue); padding: 14px 12px 8px; }
+.hero-phone__brand { color: #fff; font-weight: 800; font-size: 14px; letter-spacing: 0.2px; }
+.hero-phone__viewer { flex: 1; min-height: 0; background: linear-gradient(180deg, #eef3fb, #dbe4f2); }
+.hero-phone__viewer .hand3d { height: 100%; }
+.hero-phone__viewer .hand3d__canvas { height: 100%; min-height: 0; aspect-ratio: auto; background: transparent; }
+.hero-phone__progress { padding: 8px 12px 12px; }
+.hero-phone__progress-label { font-size: 11px; color: #4c5054; font-weight: 600; }
+.hero-phone__bar { margin-top: 6px; height: 8px; border-radius: 5px; background: #e5e9ec; overflow: hidden; }
+.hero-phone__fill { width: 64%; height: 100%; background: var(--nhs-green, #007f3b); }
+
+@media (max-width: 900px) { .hero-scene { display: none; } }
+
+/* --- Hero phone: static step-by-step images (no animation) --------------- */
+.hero-phone__appbar { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.hero-phone__appbar-sub { color: rgba(255,255,255,0.85); font-size: 11px; font-weight: 600; }
+.hero-steps { flex: 1; min-height: 0; background: linear-gradient(180deg, #eef3fb, #dbe4f2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.hero-steps__img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.hero-steps__placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #5b6166; text-align: center; padding: 12px; }
+.hero-steps__ph-num { width: 38px; height: 38px; border-radius: 50%; background: var(--nhs-blue); color: #fff; font-weight: 800; display: grid; place-items: center; font-size: 18px; }
+.hero-steps__ph-text { font-size: 11px; line-height: 1.4; }
+.hero-steps__ph-text code { background: #d7e0ee; padding: 1px 4px; border-radius: 3px; }
+.hero-steps__caption { padding: 7px 10px 4px; font-size: 11px; line-height: 1.3; color: #3a3f43; font-weight: 600; min-height: 30px; }
+.hero-steps__controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 10px 10px; }
+.hero-steps__nav { width: 26px; height: 26px; border-radius: 50%; border: 0; background: var(--nhs-blue); color: #fff; font-size: 16px; line-height: 1; cursor: pointer; display: grid; place-items: center; }
+.hero-steps__nav:disabled { opacity: 0.3; cursor: default; }
+.hero-steps__dots { display: flex; gap: 6px; }
+.hero-steps__dots button { width: 8px; height: 8px; padding: 0; border-radius: 50%; border: 0; background: #c2cad3; cursor: pointer; }
+.hero-steps__dots button.on { background: var(--nhs-blue); }
+
+/* --- Exercise 3D hand (posed, static) inside hero phone ------------------ */
+.exhand { position: relative; width: 100%; height: 100%; }
+.exhand canvas { display: block; width: 100% !important; height: 100% !important; }
+.exhand__overlay { position: absolute; inset: 0; display: grid; place-items: center; color: #5b6166; font-size: 12px; }
+.hero-steps__title { padding: 8px 10px 0; font-size: 12px; font-weight: 800; color: var(--nhs-blue); }
+
+/* --- Hero phone: one static hand image + text instructions --------------- */
+.hero-ex__image { height: 132px; background: linear-gradient(180deg, #eef3fb, #dbe4f2); }
+.hero-ex__text { flex: 1; min-height: 0; overflow: auto; padding: 10px 12px 12px; }
+.hero-ex__text .hero-ex__lead { margin: 0 0 12px; font-size: 13px; line-height: 1.35; font-weight: 800; color: var(--nhs-blue); max-width: none; }
+.hero-ex__list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 10px; }
+.hero-ex__list li { font-size: 12px; line-height: 1.4; color: #2f3437; }

@@ -1,5 +1,5 @@
 {
-  "name": "movemend-nextjs",
+  "name": "handyandy-nextjs",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -9,13 +9,16 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "typescript": "latest"
+    "next": "15.5.19",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "three": "^0.184.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.184.0",
+    "typescript": "^5.6.0"
+  }
 }

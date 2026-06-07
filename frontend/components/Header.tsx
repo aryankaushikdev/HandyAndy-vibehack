@@ -31,9 +31,9 @@ export function Header({ variant }: HeaderProps) {
     <header className="header" role="banner">
       <div className={variant === "landing" ? "nhs-width header__inner" : "header__inner"} style={variant === "dashboard" ? { paddingInline: 15 } : undefined}>
         <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-          <Link href="/" className="logo" aria-label="MoveMend home">
+          <Link href="/" className="logo" aria-label="HandyAndy home">
             {variant === "dashboard" && <span className="logo__icon" aria-hidden="true" />}
-            <span>MoveMend</span>
+            <span>HandyAndy</span>
           </Link>
           <nav className="nav" aria-label="Primary navigation">
             {nav.map((item) => (

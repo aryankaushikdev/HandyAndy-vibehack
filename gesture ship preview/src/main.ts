@@ -91,16 +91,31 @@ window.addEventListener('resize', sizeCanvas)
 // Exercise selection (menu item click = user gesture → can unlock audio/camera)
 // ---------------------------------------------------------------------------
 async function selectExercise(id: string) {
-  if (!landmarker) return
+  if (!landmarker) {
+    alert('The hand tracker is still loading. Please wait a moment and try again.')
+    return
+  }
   voice.unlock()
   document.getElementById('menu')!.hidden = true
   document.getElementById('live')!.hidden = false
+  setStatus('Starting camera… allow camera access when your browser asks.')
   try {
     if (!video.srcObject) await startCamera()
     else sizeCanvas()
-  } catch {
-    setStatus('Camera permission is needed. Allow access, then pick the exercise again.')
-    showMenu()
+  } catch (err) {
+    // Stay on the live screen so the message is actually visible (it lives inside
+    // the live section). Bouncing back to the menu hid it and looked like a no-op.
+    console.error('Camera error:', err)
+    const e = err as { name?: string; message?: string }
+    const reason =
+      e?.name === 'NotAllowedError'
+        ? 'Camera permission was blocked. Click the camera icon in your browser’s address bar, allow access, then press “Back to menu” and pick the exercise again.'
+        : e?.name === 'NotFoundError'
+          ? 'No camera was found on this device.'
+          : !window.isSecureContext
+            ? 'The camera needs a secure connection. Open this on http://localhost or over HTTPS (phones need HTTPS).'
+            : `Camera unavailable: ${e?.message ?? err}`
+    setStatus(reason)
     return
   }
   lastTime = 0

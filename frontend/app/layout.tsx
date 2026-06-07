@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MoveMend | Recovery Guide",
+  title: "HandyAndy | Recovery Guide",
   description: "NHS and GDS-aligned rehabilitation recovery guide built with Next.js."
 };
 
