@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Play, Pause, RotateCcw, RotateCw, Box } from "lucide-react";
 import type * as THREE from "three";
-import handAsset from "@/assets/hand_gesture.glb.asset.json";
+import modelUrl from "@/assets/hand_gesture.glb?url";
 import type { ExerciseId } from "@/types";
 
 type Props = {
@@ -17,7 +17,7 @@ export function HandViewer({ jointKey: _jointKey, exerciseId: _exerciseId }: Pro
     setProgress?: (p: number) => void;
     setLoopRange?: (start: number, end: number) => void;
   }>({});
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(true); // autoplay
   const [progressState, setProgressState] = useState(0);
   const [duration, setDuration] = useState(45);
   const [fullDuration, setFullDuration] = useState(1.5);
@@ -67,7 +67,7 @@ export function HandViewer({ jointKey: _jointKey, exerciseId: _exerciseId }: Pro
       let clipDuration = 0;
       let loopStartT = 0;
       let loopEndT = 1.5;
-      let isPlaying = false;
+      let isPlaying = true; // autoplay: animate as soon as the clip loads, looping
       let currentTime = 0;
       let direction = 1;
 
@@ -84,7 +84,7 @@ export function HandViewer({ jointKey: _jointKey, exerciseId: _exerciseId }: Pro
       };
 
       const loader = new GLTFLoader();
-      loader.load(handAsset.url, (gltf) => {
+      loader.load(modelUrl, (gltf) => {
         if (disposed) return;
         const model = gltf.scene;
 
